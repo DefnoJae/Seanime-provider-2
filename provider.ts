@@ -123,7 +123,10 @@ class Provider {
   getSettings(): Settings {
     return {
       episodeServers: ["AniZone"],
-      supportsDub: false,
+      // AniZone does not split its catalog into separate sub/dub entries. Let
+      // Seanime search it in either playback mode and use the audio tracks
+      // exposed by the resolved HLS stream.
+      supportsDub: true,
     };
   }
 
@@ -174,8 +177,6 @@ class Provider {
   }
 
   async search(options: SearchOptions): Promise<SearchResult[]> {
-    if (options.dub) return [];
-
     const query = (options.query || "").trim();
     if (!query) return [];
 
@@ -184,12 +185,14 @@ class Provider {
 
     return items
       .filter((item) => Boolean(item?.slug))
-      .filter((item) => !options.year || !item.start_year || item.start_year === options.year)
       .map((item) => ({
         id: item.slug,
         title: item.main_title || this.englishTitle(item.title_list) || item.slug,
         url: `${BASE_URL}/anime/${item.slug}`,
-        subOrDub: "sub" as SubOrDub,
+        // AniZone provides one catalog entry for both playback preferences.
+        // Marking it as "both" keeps automatic matching and episode navigation
+        // working when Seanime's global preference is set to dubbed.
+        subOrDub: "both" as SubOrDub,
       }));
   }
 
@@ -306,5 +309,4 @@ class Provider {
     throw new Error("AniZone episode ID is invalid");
   }
 }
-
 
