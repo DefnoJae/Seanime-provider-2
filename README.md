@@ -20,8 +20,7 @@ https://raw.githubusercontent.com/DefnoJae/Seanime-provider-2/main/manifest.json
 
 ## Notes
 
-AniZone currently does not label catalog entries as dubbed, so the provider advertises subtitle streaming only. Available audio tracks inside the HLS stream are still handled by the player.
+AniZone does not split its catalog into separate subbed and dubbed search entries. The provider therefore exposes each result in both Seanime playback modes, while the player handles the audio tracks and selectable subtitles available in AniZone's HLS stream.
 
 This extension does not host or redistribute media. It only resolves links exposed by AniZone. Availability depends on AniZone and its video CDN, and users are responsible for complying with applicable laws and the source site's terms.
-
 
