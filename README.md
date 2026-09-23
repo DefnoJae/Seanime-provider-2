@@ -5,7 +5,7 @@ An online-stream provider for [Seanime](https://github.com/5rahim/seanime) backe
 ## Features
 
 - Searches AniZone's anime catalog.
-- Loads complete episode lists, including series longer than one AniZone page.
+- Loads complete episode lists through AniZone's Livewire pagination instead of stopping at the first 24 episodes.
 - Plays AniZone HLS streams.
 - Exposes every subtitle track from the AniZone player, preserving descriptive labels such as full English subtitles and signs/songs tracks.
 - Passes the page origin and referer headers used by AniZone's web player.
