@@ -1,7 +1,7 @@
 {
   "id": "anizone",
   "name": "AniZone by Jae",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "manifestURI": "https://raw.githubusercontent.com/DefnoJae/Seanime-provider-2/main/manifest.json",
   "language": "typescript",
   "type": "onlinestream-provider",
