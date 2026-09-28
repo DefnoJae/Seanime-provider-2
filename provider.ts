@@ -259,22 +259,121 @@ class Provider {
     return titles["1"] || Object.keys(titles).map((key) => titles[key]).find(Boolean);
   }
 
+  private normalizeTitle(value: string): string {
+    return value
+      .toLowerCase()
+      .normalize("NFKD")
+      .replace(/[’']/g, "")
+      .replace(/&/g, " and ")
+      .replace(/[^a-z0-9]+/g, " ")
+      .replace(/\b(?:season|part)\s*(\d+)\b/g, " $1 ")
+      .replace(/\b(\d+)(?:st|nd|rd|th)\s+season\b/g, " $1 ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  private buildSearchQueries(options: SearchOptions): string[] {
+    const queries: string[] = [];
+    const add = (value?: string) => {
+      const candidate = (value || "").trim().replace(/\s+/g, " ");
+      if (candidate && !queries.some((item) => item.toLowerCase() === candidate.toLowerCase())) {
+        queries.push(candidate);
+      }
+    };
+
+    const candidates = [
+      options.query,
+      options.media.romajiTitle,
+      options.media.englishTitle,
+      ...(options.media.synonyms || []),
+    ];
+
+    for (const value of candidates) {
+      add(value);
+      if (!value) continue;
+
+      // AniZone sometimes keeps sequels under the original catalog title rather
+      // than appending AniList's "Season 2" / "2nd Season" suffix.
+      add(
+        value
+          .replace(/\s+(?:season\s*\d+|\d+(?:st|nd|rd|th)\s+season)\s*$/i, "")
+          .trim(),
+      );
+
+      const colonIndex = value.indexOf(":");
+      if (colonIndex > 0) add(value.slice(0, colonIndex));
+    }
+
+    return queries;
+  }
+
+  private scoreSearchResult(item: AniZoneAnime, options: SearchOptions): number {
+    const title = item.main_title || this.englishTitle(item.title_list) || "";
+    const normalized = this.normalizeTitle(title);
+    if (!normalized) return 0;
+
+    const targets = [
+      options.query,
+      options.media.romajiTitle,
+      options.media.englishTitle,
+      ...(options.media.synonyms || []),
+    ]
+      .filter(Boolean)
+      .map((value) => this.normalizeTitle(value as string));
+
+    let score = 0;
+    for (const target of targets) {
+      if (!target) continue;
+      if (normalized === target) score = Math.max(score, 100);
+      else if (normalized.includes(target) || target.includes(normalized)) score = Math.max(score, 80);
+      else {
+        const words = target.split(" ").filter((word) => word.length > 2);
+        if (words.length) {
+          const matches = words.filter((word) => normalized.includes(word)).length;
+          score = Math.max(score, Math.round((matches / words.length) * 70));
+        }
+      }
+    }
+
+    if (options.year && item.start_year) {
+      if (item.start_year === options.year) score += 15;
+      else if (Math.abs(item.start_year - options.year) > 1) score -= 10;
+    }
+
+    return score;
+  }
+
   async search(options: SearchOptions): Promise<SearchResult[]> {
-    const query = (options.query || "").trim();
-    if (!query) return [];
+    const queries = this.buildSearchQueries(options);
+    if (!queries.length) return [];
 
-    const html = await this.getPage(`${BASE_URL}/anime?search=${encodeURIComponent(query)}`);
-    const items = this.extractItems<AniZoneAnime>(html);
+    const resultsBySlug: Record<string, AniZoneAnime> = {};
 
-    return items
-      .filter((item) => Boolean(item?.slug))
-      .map((item) => ({
+    for (const query of queries) {
+      try {
+        const html = await this.getPage(`${BASE_URL}/anime?search=${encodeURIComponent(query)}`);
+        const items = this.extractItems<AniZoneAnime>(html);
+
+        for (const item of items) {
+          if (item?.slug) resultsBySlug[item.slug] = item;
+        }
+
+        // Exact/full-title searches should stay fast. Only broaden when needed.
+        if (Object.keys(resultsBySlug).length > 0 && query === queries[0]) break;
+      } catch (error) {
+        console.error(`AniZone: search failed for "${query}"`, error);
+      }
+    }
+
+    return Object.keys(resultsBySlug)
+      .map((slug) => resultsBySlug[slug])
+      .map((item) => ({ item, score: this.scoreSearchResult(item, options) }))
+      .filter((entry) => entry.score >= 20)
+      .sort((a, b) => b.score - a.score)
+      .map(({ item }) => ({
         id: item.slug,
         title: item.main_title || this.englishTitle(item.title_list) || item.slug,
         url: `${BASE_URL}/anime/${item.slug}`,
-        // AniZone provides one catalog entry for both playback preferences.
-        // Marking it as "both" keeps automatic matching and episode navigation
-        // working when Seanime's global preference is set to dubbed.
         subOrDub: "both" as SubOrDub,
       }));
   }
