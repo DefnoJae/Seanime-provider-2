@@ -7,7 +7,7 @@
   "type": "onlinestream-provider",
   "description": "AniZone by Jae online streaming provider with HLS playback, smarter title matching, and selectable subtitles.",
   "author": "Jae",
-  "icon": "https://raw.githubusercontent.com/DefnoJae/Seanime-provider-2/main/logo.jpg",
+  "icon": "https://raw.githubusercontent.com/DefnoJae/Seanime-provider-2/main/logo.png",
   "lang": "en",
   "payloadURI": "https://raw.githubusercontent.com/DefnoJae/Seanime-provider-2/main/provider.ts"
 }
