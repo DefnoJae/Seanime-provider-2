@@ -1,8 +1,11 @@
-# AniZone provider for Seanime
+# AniZone by Jae for Seanime
 
-An online-stream provider for [Seanime](https://github.com/5rahim/seanime) backed by [AniZone](https://anizone.to/).
+AniZone by Jae is an online-stream provider for [Seanime](https://github.com/5rahim/seanime) backed by [AniZone](https://anizone.to/).
 
 ## Features
+
+- Custom AniZone by Jae extension branding and logo.
+- Smarter fallback title matching for AniList/AniZone naming differences.
 
 - Searches AniZone's anime catalog.
 - Loads complete episode lists through AniZone's Livewire pagination instead of stopping at the first 24 episodes.
